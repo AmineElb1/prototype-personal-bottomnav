@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react"
 import Navigation20MobileAppIos from "./imports/Navigation20MobileAppIos/index"
 import SiteNav from "./SiteNav"
-import BottomNav from "./BottomNav"
+import BottomNav, { loadNavPrefs, NAV_ITEMS } from "./BottomNav"
 
 // ─── SF Symbols as inline SVG (cross-platform, exact Figma geometry) ──────────
 
@@ -630,9 +630,33 @@ function TabPillRow({
   )
 }
 
+function SectionPlaceholder({ id }: { id: string }) {
+  const item = NAV_ITEMS.find(i => i.id === id)
+  return (
+    <div
+      style={{
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        color: "#49454F",
+      }}
+    >
+      <span style={{ transform: "scale(2)", color: "#2766F5" }}>{item?.icon}</span>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a", margin: "12px 0 0" }}>{item?.label}</h1>
+      <p style={{ fontSize: 13, margin: 0 }}>Nog niet uitgewerkt in dit prototype</p>
+    </div>
+  )
+}
+
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [navPrefs, setNavPrefs] = useState(loadNavPrefs)
+  const [activeNavId, setActiveNavId] = useState(() => navPrefs.opening)
   const [activeTabIdx, setActiveTabIdx] = useState(0)
   const [activePills, setActivePills] = useState<Record<string, string>>({})
   const [selectedSubmenu, setSelectedSubmenu] = useState<Record<string, Record<string, string>>>({})
@@ -795,6 +819,9 @@ export default function App() {
   return (
     <div style={{ background: "white", height: "100%", width: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
+      {/* Home view stays mounted (hidden) while another bottom-nav section is open, so its state survives */}
+      <div style={{ flex: 1, minHeight: 0, display: activeNavId === "home" ? "flex" : "none", flexDirection: "column" }}>
+
       {/* ── Header — translates up with scroll, comes back on scroll-up ── */}
       <div
         ref={headerRef}
@@ -872,7 +899,16 @@ export default function App() {
         </div>
       </div>
 
-      <BottomNav />
+      </div>
+
+      {activeNavId !== "home" && <SectionPlaceholder id={activeNavId} />}
+
+      <BottomNav
+        prefs={navPrefs}
+        onPrefsChange={setNavPrefs}
+        activeId={activeNavId}
+        onSelect={setActiveNavId}
+      />
     </div>
   )
 }
