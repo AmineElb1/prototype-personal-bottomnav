@@ -376,7 +376,7 @@ function CustomizeSheet({
   const [opening, setOpening] = useState(prefs.opening)
   const [drag, setDrag] = useState<{ id: string; startY: number; startIdx: number; dy: number } | null>(null)
 
-  // Only items that sit in the bar can be the opening tab; if the chosen one
+  // Only items that sit in the bar can be the opening app; if the chosen one
   // is dragged into "Meer", Home (always first) takes over.
   const effectiveOpening = order.indexOf(opening) < BAR_SLOTS ? opening : order[0]
 
@@ -438,7 +438,7 @@ function CustomizeSheet({
           }}
         >
           Bepaal de volgorde van het navigatiemenu door de opties te slepen. Selecteer vervolgens de gewenste
-          start-tab.
+          opening app.
         </p>
 
         <div style={{ height: 1, background: "#CAC4D0", margin: "0 8px", flexShrink: 0 }} />
@@ -472,7 +472,7 @@ function CustomizeSheet({
                 <button
                   role="radio"
                   aria-checked={checked}
-                  aria-label={`${item.label} als start-tab`}
+                  aria-label={`${item.label} als opening app`}
                   disabled={!selectable}
                   onClick={() => setOpening(id)}
                   style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, textAlign: "left", cursor: selectable ? "pointer" : "default" }}
@@ -483,7 +483,7 @@ function CustomizeSheet({
                     {item.label}
                   </span>
                   {checked && (
-                    <span style={{ fontWeight: 700, fontSize: 15, color: "#1D1B20" }}>(Opening tab)</span>
+                    <span style={{ fontWeight: 700, fontSize: 15, color: "#1D1B20" }}>(Opening app)</span>
                   )}
                 </button>
                 {!pinned && (

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react"
 import Navigation20MobileAppIos from "./imports/Navigation20MobileAppIos/index"
-import SiteNav from "./SiteNav"
-import BottomNav, { loadNavPrefs, NAV_ITEMS } from "./BottomNav"
+import SiteNav, { SubNav } from "./SiteNav"
+import BottomNav, { loadNavPrefs } from "./BottomNav"
+import SectionPage from "./SectionPages"
 
 // ─── SF Symbols as inline SVG (cross-platform, exact Figma geometry) ──────────
 
@@ -79,9 +80,53 @@ interface Article {
 
 const MAIN_TABS: TabConfig[] = [
   { id: "net-binnen", label: "Net binnen", pills: [] },
-  { id: "mijn-gemeente", label: "Mijn gemeente", pills: [] },
-  { id: "sport", label: "Sport", pills: [] },
-  { id: "showbizz", label: "Showbizz", pills: [] },
+  {
+    id: "mijn-gemeente",
+    label: "Mijn gemeente",
+    pills: [
+      { id: "alles", label: "Alles" },
+      { id: "verkeer", label: "Verkeer" },
+      { id: "wonen", label: "Wonen" },
+      { id: "cultuur", label: "Cultuur" },
+      { id: "gemeenteraad", label: "Gemeenteraad" },
+    ],
+  },
+  {
+    id: "sport",
+    label: "Sport",
+    pills: [
+      { id: "alles", label: "Alles" },
+      { id: "voetbal", label: "Voetbal" },
+      { id: "tennis", label: "Tennis" },
+      { id: "wielrennen", label: "Wielrennen" },
+      { id: "hockey", label: "Hockey" },
+      { id: "zwemmen", label: "Zwemmen" },
+      { id: "atletiek", label: "Atletiek" },
+    ],
+  },
+  {
+    id: "showbizz",
+    label: "Showbizz",
+    pills: [
+      { id: "alles", label: "Alles" },
+      { id: "film", label: "Film" },
+      { id: "muziek", label: "Muziek" },
+      { id: "televisie", label: "Televisie" },
+      { id: "royalty", label: "Royalty" },
+    ],
+  },
+  {
+    id: "misdaad",
+    label: "Misdaad",
+    pills: [
+      { id: "alles", label: "Alles" },
+      { id: "rechtbank", label: "Rechtbank" },
+      { id: "drugsgeweld", label: "Drugsgeweld" },
+      { id: "fraude", label: "Fraude" },
+      { id: "moord", label: "Moord" },
+      { id: "cybercrime", label: "Cybercrime" },
+    ],
+  },
 ]
 
 // ─── Content ─────────────────────────────────────────────────────────────────
@@ -114,6 +159,38 @@ const CONTENT: Record<string, Article[]> = {
     { label: "Televisie", title: "Nieuw seizoen van populair kookprogramma start met recordkijkcijfers", image: "photo-1556056504-5c7696c4c28d", excerpt: "Ruim 1,2 miljoen kijkers zagen de eerste aflevering, het beste resultaat in vijf jaar.", timeAgo: "2 uur geleden", premium: true },
     { label: "Royalty", title: "Prinses opent expositie en verrast met onaangekondigd bezoek aan kinderziekenhuis", image: "photo-1594810205183-18a8b0ce6c13", excerpt: "Na de opening bracht ze een uur door bij jonge patiënten. \"Dat was niet gepland, maar wel gewenst.\"", timeAgo: "4 uur geleden" },
     { label: "Celebrity", title: "Bekende presentator en partner verwachten tweede kindje", image: "photo-1572578906052-f7f3edbecc68", excerpt: "Het stel maakte het nieuws zelf bekend via sociale media en kreeg duizenden felicitaties.", timeAgo: "Gisteren" },
+  ],
+  "mijn-gemeente/verkeer": [
+    { label: "Verkeer", title: "Fietsstraat in het centrum gaat definitief open na maanden van werken", image: "photo-1627964718300-fab24a8a85ce", excerpt: "De nieuwe fietsstraat verbindt het station met de markt. Auto's zijn er nog slechts te gast, met een maximumsnelheid van 30 kilometer per uur.", timeAgo: "25 min geleden" },
+    { label: "Verkeer", title: "Werken aan de Stationsstraat: omleiding tot eind van de maand", image: "photo-1652294094412-7748207413fd", excerpt: "Het fietspad blijft open, autoverkeer wordt via de ring geleid.", timeAgo: "4 uur geleden" },
+  ],
+  "mijn-gemeente/wonen": [
+    { label: "Wonen", title: "Gemeente trekt 12 miljoen uit voor betaalbare woningen rond het station", image: "photo-1652294094412-7748207413fd", excerpt: "Het gemeentebestuur wil tegen 2028 tweehonderd nieuwe woningen bouwen, waarvan een derde sociaal.", timeAgo: "1 uur geleden", premium: true },
+    { label: "Wonen", title: "Nieuwe woonwijk aan de rand van het dorp krijgt groen licht", image: "photo-1594810459121-0dc1e2271b67", excerpt: "De eerste bewoners kunnen over twee jaar verhuizen. Een deel van de woningen is sociaal.", timeAgo: "Gisteren" },
+  ],
+  "mijn-gemeente/cultuur": [
+    { label: "Cultuur", title: "Buurtfeest op het kerkplein trekt duizenden bezoekers", image: "photo-1459679749680-18eb1eb37418", excerpt: "Van foodtrucks tot een optreden van de lokale harmonie: het jaarlijkse feest was opnieuw een succes.", timeAgo: "Gisteren" },
+    { label: "Cultuur", title: "Bibliotheek opent na verbouwing met leeshoek en makerslab", image: "photo-1536181783029-1097aaf179de", excerpt: "Naast boeken kunnen bezoekers er ook 3D-printers en naaimachines gebruiken.", timeAgo: "Gisteren" },
+  ],
+  "mijn-gemeente/gemeenteraad": [
+    { label: "Gemeenteraad", title: "Raad stemt in met nieuwe parkeerzones: bewoners betalen minder", image: "photo-1536181783029-1097aaf179de", excerpt: "Met 19 tegen 8 stemmen keurde de gemeenteraad het nieuwe parkeerplan goed. Het gaat in vanaf januari.", timeAgo: "Gisteren" },
+    { label: "Gemeenteraad", title: "Gemeenteraad bespreekt begroting: meer geld voor jeugdwerk", image: "photo-1719553946838-1190abdeee92", excerpt: "De oppositie vraagt om extra investeringen in sportaccommodaties.", timeAgo: "2 dagen geleden" },
+  ],
+  "showbizz/film": [
+    { label: "Film", title: "Debuutfilm 'De Stille Kracht' wint de Gouden Beer in Rotterdam", image: "photo-1771574203200-0ec88f162fe0", excerpt: "Regisseur Mila de Vries sleepte met haar eerste langspeelfilm de hoofdprijs in de wacht. \"Dit is voor iedereen die twijfelde.\"", timeAgo: "20 min geleden" },
+    { label: "Film", title: "Nieuwe thriller opent met recordweekend in de bioscoop", image: "photo-1693517343607-e7dced201648", excerpt: "Meer dan driehonderdduizend bezoekers zagen de film in de eerste drie dagen.", timeAgo: "3 uur geleden" },
+  ],
+  "showbizz/muziek": [
+    { label: "Muziek", title: "Zangeres kondigt verrassingstournee aan: tickets binnen een uur uitverkocht", image: "photo-1693517343607-e7dced201648", excerpt: "Voor de zomer staan er twaalf concerten gepland. Fans klaagden over problemen met de ticketsite.", timeAgo: "1 uur geleden" },
+    { label: "Muziek", title: "Festival maakt eerste namen bekend: drie dagen, zestig optredens", image: "photo-1459679749680-18eb1eb37418", excerpt: "Tickets gaan vrijdag in de voorverkoop.", timeAgo: "5 uur geleden" },
+  ],
+  "showbizz/televisie": [
+    { label: "Televisie", title: "Nieuw seizoen van populair kookprogramma start met recordkijkcijfers", image: "photo-1556056504-5c7696c4c28d", excerpt: "Ruim 1,2 miljoen kijkers zagen de eerste aflevering, het beste resultaat in vijf jaar.", timeAgo: "2 uur geleden", premium: true },
+    { label: "Televisie", title: "Talentenjacht keert terug met nieuwe jury", image: "photo-1572578906052-f7f3edbecc68", excerpt: "Twee bekende gezichten verlaten het panel, drie nieuwe namen nemen hun plaats in.", timeAgo: "Gisteren" },
+  ],
+  "showbizz/royalty": [
+    { label: "Royalty", title: "Prinses opent expositie en verrast met onaangekondigd bezoek aan kinderziekenhuis", image: "photo-1594810205183-18a8b0ce6c13", excerpt: "Na de opening bracht ze een uur door bij jonge patiënten. \"Dat was niet gepland, maar wel gewenst.\"", timeAgo: "4 uur geleden" },
+    { label: "Royalty", title: "Koninklijk paar viert jubileum met openbare wandeling", image: "photo-1486299267070-83823f5448dd", excerpt: "Duizenden mensen verzamelden zich langs de route om hen te begroeten.", timeAgo: "Gisteren" },
   ],
   "sport/alles": [
     { label: "Voetbal", title: "Ajax wint spectaculaire topper van PSV met 3-2 na rode kaart keeper", image: "photo-1679391029864-d46f366a456b", excerpt: "In de 82e minuut greep de PSV-doelman in na een uitbraak van Brobbey. Ajax profiteerde van het numerieke overwicht.", timeAgo: "35 min geleden" },
@@ -266,6 +343,12 @@ const CONTENT: Record<string, Article[]> = {
   "misdaad/rechtbank": [
     { label: "Rechtbank", title: "Uitspraak in zaak-Taghi: levenslang voor leider criminele organisatie", image: "photo-1658958327132-a80f8a9409fb", excerpt: "De rechtbank Amsterdam deed na drie jaar strafproces uitspraak.", timeAgo: "2 uur geleden", premium: true },
     { label: "Rechtbank", title: "Kroongetuige Nabil B. getuigt: 'Taghi belde zelf met de opdracht'", image: "photo-1780396209853-a771d772e56d", excerpt: "Op de zitting van gisteren gaf de kroongetuige gedetailleerde verklaringen.", timeAgo: "Gisteren" },
+  ],
+  "misdaad/drugsgeweld": [
+    { label: "Liquidatie", title: "Schietpartij in Antwerpen-Noord: tweede dode in een week in drugsmilieu", image: "photo-1598449935381-54511437c927", excerpt: "De politie sluit een afrekening niet uit. Buurtbewoners spreken van een gevoel van onveiligheid.", timeAgo: "1 uur geleden" },
+    { label: "Explosies", title: "Derde explosie in een maand tijd: woning beschadigd bij nachtelijke aanslag", image: "photo-1718592168437-8382e5b97736", excerpt: "Niemand raakte gewond. Het gerecht onderzoekt een mogelijk verband met een conflict tussen drugsbendes.", timeAgo: "3 uur geleden" },
+    { label: "Onderwereld", title: "Jonge rekruten voor drugsbendes: 'Ze beginnen als koerier, op hun vijftiende'", image: "photo-1621697944804-d0a393f7e01a", excerpt: "Hulpverleners en politie slaan alarm over het dalende instapniveau in de georganiseerde misdaad.", timeAgo: "5 uur geleden", premium: true },
+    { label: "Beleid", title: "Minister kondigt extra maatregelen aan tegen drugsgeweld in de havenstad", image: "photo-1640958900081-7b069dd23e9c", excerpt: "Er komen extra rechercheurs en meer camera's. Critici vinden dat het plan te laat komt.", timeAgo: "Gisteren" },
   ],
   "misdaad/drugs": [
     { label: "Cocaine", title: "Recordvangst: 10 ton cocaine gevonden in scheepslading bananen in Antwerpen", image: "photo-1640958900081-7b069dd23e9c", excerpt: "De straatwaarde wordt geschat op meer dan een miljard euro.", timeAgo: "1 uur geleden" },
@@ -630,28 +713,6 @@ function TabPillRow({
   )
 }
 
-function SectionPlaceholder({ id }: { id: string }) {
-  const item = NAV_ITEMS.find(i => i.id === id)
-  return (
-    <div
-      style={{
-        flex: 1,
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 12,
-        color: "#49454F",
-      }}
-    >
-      <span style={{ transform: "scale(2)", color: "#2766F5" }}>{item?.icon}</span>
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a", margin: "12px 0 0" }}>{item?.label}</h1>
-      <p style={{ fontSize: 13, margin: 0 }}>Nog niet uitgewerkt in dit prototype</p>
-    </div>
-  )
-}
-
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -835,10 +896,18 @@ export default function App() {
         onSelect={id => goToTab(MAIN_TABS.findIndex(t => t.id === id))}
       />
 
+      {activeTab.pills.length > 0 && (
+        <SubNav
+          items={activeTab.pills}
+          activeId={activePillId ?? ""}
+          onSelect={pillId => selectPill(activeTab.id, pillId)}
+        />
+      )}
+
       {/* ── Swipeable Content Carousel ── */}
       <div
         ref={viewportRef}
-        style={{ flex: 1, overflow: "hidden", position: "relative" }}
+        style={{ flex: 1, overflow: "hidden", position: "relative", touchAction: "pan-y" }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -876,7 +945,7 @@ export default function App() {
             return (
               <div
                 key={tab.id}
-                style={{ width: `${100 / MAIN_TABS.length}%`, height: "100%", overflowY: "auto" }}
+                style={{ width: `${100 / MAIN_TABS.length}%`, height: "100%", overflowY: "auto", touchAction: "pan-y" }}
                 onScroll={tabIdx === activeTabIdx ? handleContentScroll : undefined}
               >
                 <div style={{ padding: "16px 16px 12px" }}>
@@ -901,7 +970,7 @@ export default function App() {
 
       </div>
 
-      {activeNavId !== "home" && <SectionPlaceholder id={activeNavId} />}
+      {activeNavId !== "home" && <SectionPage id={activeNavId} header={<Navigation20MobileAppIos />} />}
 
       <BottomNav
         prefs={navPrefs}
