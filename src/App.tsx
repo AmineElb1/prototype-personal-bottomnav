@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react"
 import Navigation20MobileAppIos from "./imports/Navigation20MobileAppIos/index"
-import SiteNav, { SubNav } from "./SiteNav"
+import SiteNav from "./SiteNav"
+import SectionScreen from "./SectionScreen"
 import BottomNav, { loadNavPrefs } from "./BottomNav"
 import SectionPage from "./SectionPages"
 
@@ -65,6 +66,9 @@ interface TabConfig {
   id: string
   label: string
   pills: PillConfig[]
+  /** Sub-sections from index `moreFrom` on move into a dropdown labelled `moreLabel` */
+  moreLabel?: string
+  moreFrom?: number
 }
 
 interface Article {
@@ -94,6 +98,8 @@ const MAIN_TABS: TabConfig[] = [
   {
     id: "sport",
     label: "Sport",
+    moreLabel: "Meer sporten",
+    moreFrom: 2,
     pills: [
       { id: "alles", label: "Alles" },
       { id: "voetbal", label: "Voetbal" },
@@ -716,32 +722,18 @@ function TabPillRow({
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [sectionTabId, setSectionTabId] = useState<string | null>(null)
+  const [sectionSubId, setSectionSubId] = useState("alles")
   const [navPrefs, setNavPrefs] = useState(loadNavPrefs)
   const [activeNavId, setActiveNavId] = useState(() => navPrefs.opening)
-  const [activeTabIdx, setActiveTabIdx] = useState(0)
-  const [activePills, setActivePills] = useState<Record<string, string>>({})
-  const [selectedSubmenu, setSelectedSubmenu] = useState<Record<string, Record<string, string>>>({})
-  const [openMenuPillId, setOpenMenuPillId] = useState<string | null>(null)
-  const [openTabMenuId, setOpenTabMenuId] = useState<string | null>(null)
-
-  const swipeStartX = useRef<number | null>(null)
-  const swipeStartY = useRef<number | null>(null)
-  const swipeDir = useRef<"h" | "v" | null>(null)
-  const [dragOffsetX, setDragOffsetX] = useState(0)
-  const [isDragging, setIsDragging] = useState(false)
-
-  const tabRefs = useRef<(HTMLElement | null)[]>([])
-  const pillRowRef = useRef<HTMLDivElement>(null)
-  const tabRowRef = useRef<HTMLDivElement>(null)
-  const viewportRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLDivElement>(null)
   const headerTranslate = useRef(0)
   const panelScrollTop = useRef(0)
   const HEADER_HEIGHT = 106
 
+  // The home feed hides the header on scroll-down and brings it back on scroll-up
   const handleContentScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget
-    const scrollTop = el.scrollTop
+    const scrollTop = e.currentTarget.scrollTop
     const delta = scrollTop - panelScrollTop.current
     panelScrollTop.current = scrollTop
 
@@ -754,229 +746,88 @@ export default function App() {
     }
   }, [])
 
-  const activeTab = MAIN_TABS[activeTabIdx]
-  const activePillId = activePills[activeTab.id] ?? activeTab.pills[0]?.id
-  const activeSubmenuId = activePillId ? selectedSubmenu[activeTab.id]?.[activePillId] : undefined
-  const contentKey = getContentKey(activeTab.id, activePillId, activeSubmenuId)
-  const articles = CONTENT[contentKey] ?? CONTENT[activeTab.id] ?? []
-
-  useEffect(() => {
-    tabRefs.current[activeTabIdx]?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
-    pillRowRef.current?.scrollTo({ left: 0, behavior: "smooth" })
-  }, [activeTabIdx])
-
-  // Document-level non-passive touchmove listener: once a horizontal swipe is
-  // detected, preventDefault stops vertical drift on any scroll container in the tree.
-  useEffect(() => {
-    const handler = (e: TouchEvent) => {
-      if (swipeDir.current === "h") e.preventDefault()
-    }
-    document.addEventListener("touchmove", handler, { passive: false })
-    return () => document.removeEventListener("touchmove", handler)
-  }, [])
-
-  function goToTab(idx: number) {
-    setOpenTabMenuId(null)
-    if (idx === activeTabIdx) return
-    setActiveTabIdx(idx)
-    setOpenMenuPillId(null)
-    panelScrollTop.current = 0
-    headerTranslate.current = 0
-    if (headerRef.current) {
-      headerRef.current.style.transform = "translateY(0)"
-      headerRef.current.style.marginBottom = "0"
-    }
-  }
-
-  function selectPill(tabId: string, pillId: string) {
-    setActivePills(prev => ({ ...prev, [tabId]: pillId }))
-    setOpenMenuPillId(null)
-    if (activePills[tabId] !== pillId) {
-      setSelectedSubmenu(prev => ({
-        ...prev,
-        [tabId]: { ...prev[tabId], [pillId]: undefined as unknown as string },
-      }))
-    }
-  }
-
-  function selectSubmenuItem(tabId: string, pillId: string, submenuId: string) {
-    setActivePills(prev => ({ ...prev, [tabId]: pillId }))
-    setSelectedSubmenu(prev => ({ ...prev, [tabId]: { ...prev[tabId], [pillId]: submenuId } }))
-    setOpenMenuPillId(null)
-  }
-
-  function clearSubmenu(tabId: string, pillId: string) {
-    setSelectedSubmenu(prev => {
-      const tabMap = { ...prev[tabId] }
-      delete tabMap[pillId]
-      return { ...prev, [tabId]: tabMap }
-    })
-  }
-
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    swipeStartX.current = e.touches[0].clientX
-    swipeStartY.current = e.touches[0].clientY
-    swipeDir.current = null
-    setIsDragging(true)
-  }, [])
-
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    if (swipeStartX.current === null) return
-    const dx = e.touches[0].clientX - swipeStartX.current
-    const dy = e.touches[0].clientY - (swipeStartY.current ?? 0)
-    if (!swipeDir.current && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
-      swipeDir.current = Math.abs(dx) > Math.abs(dy) ? "h" : "v"
-    }
-    if (swipeDir.current === "h") setDragOffsetX(dx)
-  }, [])
-
-  const onTouchEnd = useCallback(() => {
-    if (swipeDir.current === "h") {
-      const threshold = 55
-      if (dragOffsetX < -threshold && activeTabIdx < MAIN_TABS.length - 1) {
-        setActiveTabIdx(i => i + 1); setOpenMenuPillId(null); setOpenTabMenuId(null)
-      } else if (dragOffsetX > threshold && activeTabIdx > 0) {
-        setActiveTabIdx(i => i - 1); setOpenMenuPillId(null); setOpenTabMenuId(null)
-      }
-    }
-    swipeStartX.current = null; swipeStartY.current = null; swipeDir.current = null
-    setDragOffsetX(0); setIsDragging(false)
-  }, [dragOffsetX, activeTabIdx])
-
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    swipeStartX.current = e.clientX; swipeDir.current = "h"; setIsDragging(true)
-  }, [])
-
-  const onMouseMove = useCallback((e: React.MouseEvent) => {
-    if (swipeStartX.current === null) return
-    setDragOffsetX(e.clientX - swipeStartX.current)
-  }, [])
-
-  const onMouseUp = useCallback(() => {
-    const threshold = 55
-    if (dragOffsetX < -threshold && activeTabIdx < MAIN_TABS.length - 1) {
-      setActiveTabIdx(i => i + 1); setOpenMenuPillId(null); setOpenTabMenuId(null)
-    } else if (dragOffsetX > threshold && activeTabIdx > 0) {
-      setActiveTabIdx(i => i - 1); setOpenMenuPillId(null); setOpenTabMenuId(null)
-    }
-    swipeStartX.current = null; swipeDir.current = null
-    setDragOffsetX(0); setIsDragging(false)
-  }, [dragOffsetX, activeTabIdx])
-
-  const vpWidth = viewportRef.current?.offsetWidth ?? 390
-  const dragPct = isDragging && swipeDir.current === "h" ? (dragOffsetX / vpWidth) * (100 / MAIN_TABS.length) : 0
-  const translatePct = (activeTabIdx / MAIN_TABS.length) * 100 - dragPct
-
-  function getSubmenuLabel(tabId: string, pillId: string): string | undefined {
-    const id = selectedSubmenu[tabId]?.[pillId]
-    if (!id) return undefined
+  // Tabs with sub-sections open their own section page; the others stay on the home feed
+  function openTab(tabId: string) {
     const tab = MAIN_TABS.find(t => t.id === tabId)
-    const pill = tab?.pills.find(p => p.id === pillId)
-    return pill?.submenu?.find(s => s.id === id)?.label
+    if (!tab || tab.pills.length === 0) return
+    setSectionTabId(tabId)
+    setSectionSubId("alles")
   }
 
-  const openDropdownPill = openMenuPillId ? activeTab.pills.find(p => p.id === openMenuPillId && p.submenu) : null
+  function selectNav(id: string) {
+    setActiveNavId(id)
+    if (id === "home") setSectionTabId(null)
+  }
+
+  const homeArticles = CONTENT["net-binnen"] ?? []
+  const sectionTab = MAIN_TABS.find(t => t.id === sectionTabId)
+  const sectionSubs = sectionTab?.pills.filter(p => p.id !== "alles") ?? []
+  const moreFrom = sectionTab?.moreFrom ?? sectionSubs.length
+  const sectionArticles = sectionTab
+    ? CONTENT[getContentKey(sectionTab.id, sectionSubId)] ?? CONTENT[sectionTab.id] ?? []
+    : []
+  const sectionHeading = sectionTab?.pills.find(p => p.id === sectionSubId && p.id !== "alles")?.label ?? "Laatste nieuws"
+
+  const onHome = activeNavId === "home"
 
   return (
     <div style={{ background: "white", height: "100%", width: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
 
-      {/* Home view stays mounted (hidden) while another bottom-nav section is open, so its state survives */}
-      <div style={{ flex: 1, minHeight: 0, display: activeNavId === "home" ? "flex" : "none", flexDirection: "column" }}>
+      {/* Home view stays mounted (hidden) while a section page or another bottom-nav section is open, so its state survives */}
+      <div style={{ flex: 1, minHeight: 0, display: onHome && !sectionTab ? "flex" : "none", flexDirection: "column" }}>
 
-      {/* ── Header — translates up with scroll, comes back on scroll-up ── */}
-      <div
-        ref={headerRef}
-        style={{ flexShrink: 0, zIndex: 30, willChange: "transform" }}
-      >
-        <Navigation20MobileAppIos />
-      </div>
+        {/* ── Header — translates up with scroll, comes back on scroll-up ── */}
+        <div ref={headerRef} style={{ flexShrink: 0, zIndex: 30, willChange: "transform" }}>
+          <Navigation20MobileAppIos />
+        </div>
 
-      <SiteNav
-        activeId={activeTab.id}
-        onSelect={id => goToTab(MAIN_TABS.findIndex(t => t.id === id))}
-      />
+        <SiteNav activeId="net-binnen" onSelect={openTab} />
 
-      {activeTab.pills.length > 0 && (
-        <SubNav
-          items={activeTab.pills}
-          activeId={activePillId ?? ""}
-          onSelect={pillId => selectPill(activeTab.id, pillId)}
-        />
-      )}
-
-      {/* ── Swipeable Content Carousel ── */}
-      <div
-        ref={viewportRef}
-        style={{ flex: 1, overflow: "hidden", position: "relative", touchAction: "pan-y" }}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
-      >
-        <div
-          style={{
-            display: "flex",
-            height: "100%",
-            width: `${MAIN_TABS.length * 100}%`,
-            transform: `translateX(-${translatePct}%)`,
-            transition: isDragging ? "none" : "transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94)",
-            willChange: "transform",
-          }}
-        >
-          {MAIN_TABS.map((tab, tabIdx) => {
-            const panelPillId = activePills[tab.id] ?? tab.pills[0]?.id
-            const panelSubmenuId = panelPillId ? selectedSubmenu[tab.id]?.[panelPillId] : undefined
-            const panelKey = getContentKey(tab.id, panelPillId, panelSubmenuId)
-            const panelArticles = CONTENT[panelKey] ?? CONTENT[tab.id] ?? []
-
-            const panelPill = tab.pills.find(p => p.id === panelPillId)
-            const panelSubmenuLabel = panelSubmenuId
-              ? panelPill?.submenu?.find(s => s.id === panelSubmenuId)?.label
-              : undefined
-            const pageTitle = panelSubmenuLabel
-              ? panelSubmenuLabel
-              : panelPillId && panelPillId !== "alles"
-                ? (panelPill?.label ?? tab.label)
-                : tab.label
-
-            return (
-              <div
-                key={tab.id}
-                style={{ width: `${100 / MAIN_TABS.length}%`, height: "100%", overflowY: "auto", touchAction: "pan-y" }}
-                onScroll={tabIdx === activeTabIdx ? handleContentScroll : undefined}
-              >
-                <div style={{ padding: "16px 16px 12px" }}>
-                  <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.2, margin: 0 }}>
-                    {tabIdx === activeTabIdx ? pageTitle : tab.label}
-                  </h1>
-                  <p style={{ fontSize: 13, color: "#aaa", margin: "4px 0 0" }}>
-                    {panelArticles.length} artikel{panelArticles.length !== 1 ? "en" : ""}
-                  </p>
-                </div>
-
-                {panelArticles.map((article, i) => (
-                  <ArticleTeaser key={i} article={article} index={i} />
-                ))}
-
-                <div style={{ height: 32 }} />
-              </div>
-            )
-          })}
+        <div style={{ flex: 1, overflowY: "auto" }} onScroll={handleContentScroll}>
+          <div style={{ padding: "16px 16px 12px" }}>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.2, margin: 0 }}>Net binnen</h1>
+            <p style={{ fontSize: 13, color: "#aaa", margin: "4px 0 0" }}>{homeArticles.length} artikelen</p>
+          </div>
+          {homeArticles.map((article, i) => (
+            <ArticleTeaser key={i} article={article} index={i} />
+          ))}
+          <div style={{ height: 32 }} />
         </div>
       </div>
 
-      </div>
+      {onHome && sectionTab && (
+        <SectionScreen
+          key={sectionTab.id}
+          title={sectionTab.label}
+          subs={sectionSubs.slice(0, moreFrom)}
+          moreLabel={sectionTab.moreLabel}
+          moreSubs={sectionSubs.slice(moreFrom)}
+          activeSubId={sectionSubId}
+          onSelectSub={setSectionSubId}
+          onBack={() => setSectionTabId(null)}
+        >
+          <div key={sectionSubId}>
+            <div style={{ padding: "16px 16px 12px" }}>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.2, margin: 0 }}>{sectionHeading}</h1>
+              <p style={{ fontSize: 13, color: "#aaa", margin: "4px 0 0" }}>
+                {sectionArticles.length} artikel{sectionArticles.length !== 1 ? "en" : ""}
+              </p>
+            </div>
+            {sectionArticles.map((article, i) => (
+              <ArticleTeaser key={i} article={article} index={i} />
+            ))}
+            <div style={{ height: 32 }} />
+          </div>
+        </SectionScreen>
+      )}
 
-      {activeNavId !== "home" && <SectionPage id={activeNavId} header={<Navigation20MobileAppIos />} />}
+      {!onHome && <SectionPage id={activeNavId} header={<Navigation20MobileAppIos />} />}
 
       <BottomNav
         prefs={navPrefs}
         onPrefsChange={setNavPrefs}
         activeId={activeNavId}
-        onSelect={setActiveNavId}
+        onSelect={selectNav}
       />
     </div>
   )
