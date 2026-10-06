@@ -85,7 +85,7 @@ export default function Navigation20MobileAppIos() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", width: "100%", flexShrink: 0 }}>
       {/* Header nav */}
-      <div style={{ width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "flex-end", height: 106, padding: "8px 16px", gap: 16 }}>
+      <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "flex-end", height: 52, padding: "8px 16px", gap: 16 }}>
         <div style={{ flex: "1 0 0", display: "flex", alignItems: "center", minWidth: 0, maxHeight: 32, overflow: "hidden" }}>
           <HeaderLogo />
         </div>

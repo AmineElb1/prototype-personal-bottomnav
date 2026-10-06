@@ -729,7 +729,7 @@ export default function App() {
   const headerRef = useRef<HTMLDivElement>(null)
   const headerTranslate = useRef(0)
   const panelScrollTop = useRef(0)
-  const HEADER_HEIGHT = 106
+  const HEADER_HEIGHT = 52
 
   // The home feed hides the header on scroll-down and brings it back on scroll-up
   const handleContentScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {

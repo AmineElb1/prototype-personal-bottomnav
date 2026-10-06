@@ -48,7 +48,7 @@ export default function SectionScreen({
     flexShrink: 0,
     height: 44,
     fontFamily: "'Roboto', sans-serif",
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: active ? 500 : 400,
     color: NAVY,
     whiteSpace: "nowrap" as const,
@@ -61,7 +61,6 @@ export default function SectionScreen({
   return (
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "#fff" }}>
       <header style={{ position: "relative", zIndex: 40, flexShrink: 0, background: "#fff", color: NAVY, borderBottom: "1px solid #e0e0e0" }}>
-        <div style={{ height: 54 }} />
         <div style={{ position: "relative", height: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <button
             onClick={onBack}
@@ -70,7 +69,7 @@ export default function SectionScreen({
           >
             <Chevron direction="left" />
           </button>
-          <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 22 }}>{title}</span>
+          <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 20 }}>{title}</span>
         </div>
 
         <nav
@@ -133,7 +132,7 @@ export default function SectionScreen({
                     textAlign: "left",
                     padding: "14px 16px",
                     fontFamily: "'Roboto', sans-serif",
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: s.id === activeSubId ? 500 : 400,
                     color: NAVY,
                     borderTop: i > 0 ? "1px solid #ebebeb" : "none",

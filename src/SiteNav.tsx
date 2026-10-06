@@ -59,7 +59,7 @@ export default function SiteNav({
                   display: "block",
                   height: 44,
                   fontFamily: "'Roboto', 'Roboto Fallback', sans-serif", // --font-family-primary
-                  fontSize: 17, // --font-size-md
+                  fontSize: 15,
                   fontWeight: 500,
                   lineHeight: 1.15, // --line-height-sm
                   color: isActive ? NAV_ACTIVE : NAV_FOREGROUND,
